@@ -1,0 +1,170 @@
+import pygame
+import random
+import math
+import tkinter as tk
+from tkinter import messagebox
+
+
+class cube(object):
+    rows = 20
+    w = 500
+
+    def __init__(self, start, dirx=1, diry=0, colour=(255, 0, 0)):
+        self.posn = start
+        self.dirx = 1
+        self.diry = 0
+        self.colour = colour
+
+    def move(self, dirx, diry):
+        self.dirx = dirx
+        self.diry = diry
+        self.posn = (self.posn[0] + self.dirx, self.posn[1] + self.diry)
+
+    def draw(self, surface, eyes=False):
+        dis = self.w // self.rows
+        i = self.posn[0]
+        j = self.posn[1]
+
+        pygame.draw.rect(surface, self.colour, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
+
+
+class snake(object):
+    body = []
+    turns = []
+
+    def __init__(self, colour, posn):
+        self.colour = colour
+        self.head = cube(posn)
+        self.body.append(self.head)
+        self.dirx = 0
+        self.diry = 1
+
+    def move(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.type == pygame.K_LEFT:
+                    self.dirx = -1
+                    self.diry = 0
+
+                elif event.type == pygame.K_RIGHT:
+                    self.dirx = 1
+                    self.diry = 0
+
+                elif event.type == pygame.K_UP:
+                    self.dirx = 0
+                    self.diry = -1
+
+                elif event.type == pygame.K_DOWN:
+                    self.dirx = 0
+                    self.diry = 1
+
+        for i, c in enumerate(self.body):
+            p = c.posn[:]
+            if p in self.turns:
+                turn = self.turns[p]
+                c.move(turn[0], turn[1])
+                if i == len(self.body) - 1:
+                    self.turns.pop(p)
+            else:
+                if c.dirx == -1 and c.posn[0] <= 0:
+                    c.posn = (c.rows - 1, c.posn[1])
+                elif c.dirx == 1 and c.posn[0] >= c.rows - 1:
+                    c.posn = (0, c.posn[1])
+                elif c.diry == 1 and c.posn[1] >= c.rows - 1:
+                    c.posn = (c.posn[0], 0)
+                elif c.diry == -1 and c.posn[1] <= 0:
+                    c.posn = (c.posn[0], c.rows - 1)
+                else:
+                    c.move(c.dirx, c.diry)
+
+    def reset(self, posn):
+        pass
+
+    def addCube(self):
+        tail = self.body[-1]
+        dx, dy = tail.dirx, tail.diry
+
+        if dx == 1 and dy == 0:
+            self.body.append((cube(tail.posn[0]-1, tail.posn[1])))
+        elif dx == -1 and dy == 0:
+            self.body.append((cube(tail.posn[0] + 1, tail.posn[1])))
+        elif dx == 0 and dy == 1:
+            self.body.append((cube(tail.posn[0], tail.posn[1]-1)))
+        elif dx == 0 and dy == -1:
+            self.body.append((cube(tail.posn[0], tail.posn[1]+1)))
+
+        self.body[-1].dirx = dx
+        self.body[-1].diry = dy
+
+    def draw(self, surface):
+        for i, c in enumerate(self.body):
+            if i == 0:
+                c.draw(surface, True)
+            else:
+                c.draw(surface)
+
+
+def grid(w, rows, surface):
+    sizeBtwn = w // rows
+
+    x = 0
+    y = 0
+    for l in range(rows):
+        x = x + sizeBtwn
+        y = y + sizeBtwn
+
+        pygame.draw.line(surface, (255, 255, 255), (x, 0), (x, w))
+        pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
+
+
+def redraw(surface):
+    global rows, width, s
+    surface.fill((0, 0, 0))
+    s.draw(surface)
+    snack.draw(surface)
+    grid(width, rows, surface)
+    pygame.display.update()
+    pass
+
+def randSnack(rows, item):
+    positions = item.body
+
+    while True:
+        x = random.randrange(rows)
+        y = random.randrange(rows)
+        if len(list(filter(lambda z:z.posn == (x,y), positions))) > 0:
+            continue
+        else:
+            break
+    return (x,y)
+
+
+def messageBox(subject, content):
+    pass
+
+
+def main():
+    global width, rows, s, snack
+    width = 500
+    rows = 20
+    win = pygame.display.set_mode((width, width))
+    s = snake((255, 0, 0), (10, 10))
+    snack = cube(randSnack(rows, s), colour=(0, 255, 0))
+    flag = True
+
+    clock = pygame.time.Clock()
+
+    while flag:
+        pygame.time.delay(50)
+        clock.tick(10)
+        s.move()
+        if s.body[0].posn == snack.posn:
+            s.addCube()
+            snack = cube(randSnack(rows, s), colour=(0, 255, 0))
+        redraw(win)
+    pass
+
+
+main()
